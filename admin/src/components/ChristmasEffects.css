@@ -52,7 +52,7 @@
 
 .santa-sleigh-gif {
     position: absolute;
-    top: 8%;
+    top: 1%; /* Giảm từ 3% xuống 1% để cao lên */
     right: -400px;
     animation: flySleigh 25s linear infinite;
     z-index: 9998;
@@ -60,30 +60,30 @@
 
 .santa-sleigh-gif img {
     width: auto;
-    height: 120px;
+    height: 240px; /* Tăng từ 180px lên 240px */
     display: block;
 }
 
 @keyframes flySleigh {
     0% {
         right: -400px;
-        top: 8%;
+        top: 1%; /* Điều chỉnh từ 3% xuống 1% */
     }
     20% {
-        top: 14%;
+        top: 7%; /* Điều chỉnh từ 9% xuống 7% */
     }
     40% {
-        top: 6%;
+        top: 0%; /* Điều chỉnh từ 1% xuống 0% */
     }
     60% {
-        top: 16%;
+        top: 9%; /* Điều chỉnh từ 11% xuống 9% */
     }
     80% {
-        top: 10%;
+        top: 3%; /* Điều chỉnh từ 5% xuống 3% */
     }
     100% {
         right: calc(100% + 400px);
-        top: 8%;
+        top: 1%; /* Điều chỉnh từ 3% xuống 1% */
     }
 }
 
@@ -95,7 +95,7 @@
     }
     
     .santa-sleigh-gif img {
-        height: 80px;
+        height: 160px; /* Tăng từ 120px lên 160px cho mobile */
     }
     
     @keyframes flySleighMobile {
