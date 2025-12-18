@@ -11,6 +11,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Chat from "./pages/Chat"
 import Revenue from "./pages/Revenue"
+import ChristmasEffects from "./components/ChristmasEffects"
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL;
 export const currency = '$'
@@ -27,6 +28,7 @@ const App = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      <ChristmasEffects />
       <ToastContainer/>
       {token === '' 
       ? <Login setToken={setToken}/>

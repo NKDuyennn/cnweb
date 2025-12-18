@@ -15,10 +15,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import Favourite from './pages/Favourite'
 import ChatBox from './components/chat'
 import SearchBar from './components/SearchBar'
+import ChristmasEffects from './components/ChristmasEffects'
 
 const App = () => {
   return (
     <div className='px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]'>
+      <ChristmasEffects />
       <ToastContainer />
       <Navbar />
       <SearchBar />

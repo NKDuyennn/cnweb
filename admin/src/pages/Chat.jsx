@@ -131,42 +131,68 @@ const Chat = ({token}) => {
   };  
 
   return (
-    <div className="flex w-full">
+    <div className="flex w-full relative">
+      {/* Tuyết rơi background cho admin chat */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute text-red-200 opacity-40"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: '-20px',
+              fontSize: `${8 + Math.random() * 12}px`,
+              animation: `fall ${6 + Math.random() * 6}s linear infinite`,
+              animationDelay: `${Math.random() * 6}s`
+            }}
+          >
+            ❄
+          </div>
+        ))}
+      </div>
+
       {/* User List - Hidden on mobile when chat is shown */}
-      <div className={`w-full sm:w-[30%] sm:border-r-2 ${showMobileChat ? 'hidden sm:block' : 'block'}`}>
-        <h2 className="font-medium text-lg md:text-3xl text-gray-800 my-5">Chat Admin</h2>
+      <div className={`w-full sm:w-[30%] sm:border-r-2 border-red-200 relative z-10 ${showMobileChat ? 'hidden sm:block' : 'block'}`}>
+        <h2 className="font-medium text-lg md:text-3xl bg-gradient-to-r from-red-600 to-green-600 bg-clip-text text-transparent my-5 flex items-center gap-2">
+          Admin Chat - Christmas
+        </h2>
         <div className="flex flex-col h-[500px] overflow-y-scroll hidden_scroll">
           {users.map((user) => (
             <div
               key={user.userId}
               onClick={() => handleSelectUser(user)}
-              className={`cursor-pointer px-3 rounded-sm ${
-                selectedUser?.userId === user.userId ? "bg-pink-100" : ""
+              className={`cursor-pointer px-3 rounded-lg transition-all ${
+                selectedUser?.userId === user.userId 
+                  ? "bg-gradient-to-r from-red-100 to-green-100 shadow-md" 
+                  : "hover:bg-red-50"
               }`}
             >
-              <div className="flex gap-3 w-full py-3 mb-2">
-                <img
-                  src={assets.avatar_woman}
-                  alt="avatar"
-                  className="w-8 h-8 md:w-12 md:h-12"
-                />
+              <div className="flex gap-3 w-full py-3 mb-2 items-center">
+                <div className="relative">
+                  <img
+                    src={assets.avatar_woman}
+                    alt="avatar"
+                    className="w-8 h-8 md:w-12 md:h-12 rounded-full border-2 border-red-300"
+                  />
+                  <span className="absolute -top-1 -right-1 text-lg">🎁</span>
+                </div>
                 <div className="flex items-center">
-                  <p className="font-medium text-black sm:text-base lg:text-lg">{user.username}</p>
+                  <p className="font-medium text-gray-800 sm:text-base lg:text-lg">{user.username}</p>
                 </div>
               </div>
-              <hr className="w-[90%] m-auto border-gray-300" />
+              <hr className="w-[90%] m-auto border-red-200" />
             </div>
           ))}
         </div>
       </div>
 
       {/* Chat Interface - Show on mobile only when a user is selected */}
-      <div className={`w-full sm:w-[70%] ${showMobileChat ? 'block' : 'hidden sm:block'}`}>
+      <div className={`w-full sm:w-[70%] relative z-10 ${showMobileChat ? 'block' : 'hidden sm:block'}`}>
         <div className="flex-grow flex flex-col h-[calc(100vh-66px)]">
           {selectedUser ? (
             <>
               {/* Chat Header with Back Button */}
-              <div className="py-4 sm:p-4 border-b border-gray-200 flex items-center">
+              <div className="py-4 sm:p-4 border-b-2 border-red-200 bg-gradient-to-r from-red-50 to-green-50 flex items-center">
                 {showMobileChat && (
                   <button 
                     onClick={handleBackToList}
@@ -175,20 +201,24 @@ const Chat = ({token}) => {
                     <img src={assets.exit_icon} alt="" className="w-5 h-5"/>
                   </button>
                 )}
-                <img
-                  src={assets.avatar_woman}
-                  className="w-10 h-10 rounded-full mr-4"
-                  alt="avatar"
-                />
+                <div className="relative">
+                  <img
+                    src={assets.avatar_woman}
+                    className="w-10 h-10 rounded-full mr-4 border-2 border-green-400"
+                    alt="avatar"
+                  />
+                  <span className="absolute -top-1 -right-2 text-xl">⛄</span>
+                </div>
                 <div>
-                  <h2 className="font-semibold text-gray-800">
+                  <h2 className="font-semibold text-gray-800 flex items-center gap-2">
                     {selectedUser.username}
+                    <span className="text-sm">🎄</span>
                   </h2>
                 </div>
               </div>
 
               {/* Messages Container */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 hidden_scroll" ref={messagesContainerRef}>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 hidden_scroll bg-gradient-to-b from-red-50/30 to-green-50/30" ref={messagesContainerRef}>
                 {messages.map((msg, index) => (
                   <div
                     key={index}
@@ -199,15 +229,21 @@ const Chat = ({token}) => {
                     }`}
                   >
                     <div
-                      className={`px-4 py-2 rounded-lg max-w-[70%] ${
+                      className={`px-4 py-2 rounded-2xl max-w-[70%] shadow-md relative ${
                         msg.sender === "admin"
-                          ? "bg-pink-500 text-white"
-                          : "bg-gray-200 text-gray-800"
+                          ? "bg-gradient-to-r from-red-600 to-red-700 text-white"
+                          : "bg-gradient-to-r from-green-100 to-green-200 text-gray-800"
                       }`}
                     >
+                      {msg.sender === "admin" && (
+                        <span className="absolute -right-2 -top-2 text-xl">🎅</span>
+                      )}
+                      {msg.sender !== "admin" && (
+                        <span className="absolute -left-2 -top-2 text-xl">🎁</span>
+                      )}
                       {msg.message}
                     </div>
-                    <span className="text-xs text-gray-500 mt-1">
+                    <span className={`text-xs mt-1 ${msg.sender === "admin" ? "text-red-600" : "text-green-600"}`}>
                       {moment(msg.timestamp).format("DD/MM HH:mm")}
                     </span>
                   </div>
@@ -216,40 +252,39 @@ const Chat = ({token}) => {
               </div>
 
               {/* Message Input */}
-              <div className="p-4 border-t border-gray-200 flex items-center space-x-2 mb-2 relative">
+              <div className="p-4 border-t-2 border-red-200 bg-gradient-to-r from-red-50 to-green-50 flex items-center space-x-2 mb-2 relative">
+                <span className="text-2xl">🎅</span>
                 <input
                   type="text"
-                  placeholder="Enter your message..."
+                  placeholder="Send Christmas message... 🎄"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full flex-grow px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-200"
+                  className="w-full flex-grow px-3 py-2 border-2 border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400"
                 />
-                <button onClick={sendMessage} className="sm:px-4 sm:py-2">
-                  <img className={`w-8 h-8 relative ${showMobileChat? 'absolute w-6 h-6' : ''}`} src={assets.send_icon} alt="send" />
+                <button 
+                  onClick={sendMessage} 
+                  className="sm:px-4 sm:py-2 bg-gradient-to-r from-red-600 to-green-600 rounded-full hover:scale-110 transition-transform p-2"
+                >
+                  <span className="text-white text-xl">🎁</span>
                 </button>
               </div>
             </>
           ) : (
-            <div className="flex-grow flex items-center justify-center bg-gray-50">
+            <div className="flex-grow flex items-center justify-center bg-gradient-to-br from-red-50 to-green-50">
               <div className="text-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-24 w-24 mx-auto text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
-                </svg>
-                <h2 className="mt-4 text-xl text-gray-600">
-                  Chọn một người dùng để bắt đầu trò chuyện
+                <div className="text-8xl mb-4 animate-bounce">🎅</div>
+                <div className="flex gap-4 justify-center mb-4 text-5xl">
+                  <span className="animate-bounce" style={{animationDelay: '0.1s'}}>🎄</span>
+                  <span className="animate-bounce" style={{animationDelay: '0.2s'}}>🎁</span>
+                  <span className="animate-bounce" style={{animationDelay: '0.3s'}}>⛄</span>
+                </div>
+                <h2 className="mt-4 text-xl text-gray-600 font-semibold">
+                  🎄 Merry Christmas! 🎄
                 </h2>
+                <p className="text-gray-500 mt-2">
+                  Select a user to start chatting
+                </p>
               </div>
             </div>
           )}
