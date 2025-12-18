@@ -5,20 +5,34 @@ import productModel from '../models/productModel.js';
 const addToFavourite = async (req, res) => {
     try {
         const { userId, productId } = req.body
+        
+        console.log('🎁 Adding to favourite - userId:', userId, 'productId:', productId);
 
         const userData = await userModel.findById(userId)
-        let favoriteProducts = await userData.favoriteProducts;
+        
+        if (!userData) {
+            console.log('❌ User not found:', userId);
+            return res.json({ success: false, message: "User not found" })
+        }
+        
+        let favoriteProducts = userData.favoriteProducts || [];
+        
+        console.log('📋 Current favorites:', favoriteProducts);
 
         if (favoriteProducts.includes(productId)) {
+            console.log('⚠️ Product already in favourites');
             res.json({ success: false, message: "Product already in favourite list" })
         } else {
             favoriteProducts.push(productId)
             await userModel.findByIdAndUpdate(userId, { favoriteProducts })
+            
+            const product = await productModel.findOne({ _id: productId });
+            console.log('✅ Added to favourites successfully');
 
-            res.json({ success: true, message: "Added To Favourite", favouriteProduct: await productModel.findOne({ _id: productId }) })
+            res.json({ success: true, message: "Added To Favourite", favouriteProduct: product })
         }
     } catch (error) {
-        console.log(error)
+        console.log('❌ Error adding to favourite:', error)
         res.json({ success: false, message: error.message })
     }
 }
@@ -30,7 +44,12 @@ const deleteFromFavourite = async (req, res) => {
         const { userId } = req.body
 
         const userData = await userModel.findById(userId)
-        let favoriteProducts = await userData.favoriteProducts;
+        
+        if (!userData) {
+            return res.json({ success: false, message: "User not found" })
+        }
+        
+        let favoriteProducts = userData.favoriteProducts || [];
 
         const index = favoriteProducts.indexOf(productId)
         if (index > -1) {
@@ -52,12 +71,17 @@ const getUserFavourite = async (req, res) => {
         const { userId } = req.body
 
         const userData = await userModel.findById(userId)
-        let favoriteProducts = await userData.favoriteProducts;
+        
+        if (!userData) {
+            return res.json({ success: false, message: "User not found", favoriteProducts: [] })
+        }
+        
+        let favoriteProducts = userData.favoriteProducts || [];
 
         res.json({ success: true, favoriteProducts })
     } catch (error) {
         console.log(error)
-        res.json({ success: false, message: error.message })
+        res.json({ success: false, message: error.message, favoriteProducts: [] })
     }
 }
 

@@ -36,13 +36,21 @@ const Chat = ({token}) => {
 
   const getUserMessage = async () => {
     try {
+      console.log('🔍 Fetching users from:', backendUrl+'/api/chat/get-user');
+      console.log('🔑 Using token:', token ? 'Token exists' : 'No token');
+      
       const res = await axios.get(backendUrl+'/api/chat/get-user', {headers: {token}})
+      
+      console.log('✅ Response:', res.data);
+      
       if(res.data.success) {
         setUsers(res.data.users.reverse());
+        console.log('👥 Users loaded:', res.data.users.length);
       }
     } catch (error) {
-      console.log(error.response.data)
-      toast.error(error.response.message)
+      console.error('❌ Error fetching users:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Failed to load chat users')
     }
   }
 
@@ -157,32 +165,40 @@ const Chat = ({token}) => {
           Admin Chat - Christmas
         </h2>
         <div className="flex flex-col h-[500px] overflow-y-scroll hidden_scroll">
-          {users.map((user) => (
-            <div
-              key={user.userId}
-              onClick={() => handleSelectUser(user)}
-              className={`cursor-pointer px-3 rounded-lg transition-all ${
-                selectedUser?.userId === user.userId 
-                  ? "bg-gradient-to-r from-red-100 to-green-100 shadow-md" 
-                  : "hover:bg-red-50"
-              }`}
-            >
-              <div className="flex gap-3 w-full py-3 mb-2 items-center">
-                <div className="relative">
-                  <img
-                    src={assets.avatar_woman}
-                    alt="avatar"
-                    className="w-8 h-8 md:w-12 md:h-12 rounded-full border-2 border-red-300"
-                  />
-                  <span className="absolute -top-1 -right-1 text-lg">🎁</span>
-                </div>
-                <div className="flex items-center">
-                  <p className="font-medium text-gray-800 sm:text-base lg:text-lg">{user.username}</p>
-                </div>
-              </div>
-              <hr className="w-[90%] m-auto border-red-200" />
+          {users.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-4">
+              <div className="text-5xl mb-3">💬</div>
+              <p className="text-gray-500 text-sm">No chat messages yet</p>
+              <p className="text-gray-400 text-xs mt-2">Users will appear here when they send messages</p>
             </div>
-          ))}
+          ) : (
+            users.map((user) => (
+              <div
+                key={user.userId}
+                onClick={() => handleSelectUser(user)}
+                className={`cursor-pointer px-3 rounded-lg transition-all ${
+                  selectedUser?.userId === user.userId 
+                    ? "bg-gradient-to-r from-red-100 to-green-100 shadow-md" 
+                    : "hover:bg-red-50"
+                }`}
+              >
+                <div className="flex gap-3 w-full py-3 mb-2 items-center">
+                  <div className="relative">
+                    <img
+                      src={assets.avatar_woman}
+                      alt="avatar"
+                      className="w-8 h-8 md:w-12 md:h-12 rounded-full border-2 border-red-300"
+                    />
+                    <span className="absolute -top-1 -right-1 text-lg">🎁</span>
+                  </div>
+                  <div className="flex items-center">
+                    <p className="font-medium text-gray-800 sm:text-base lg:text-lg">{user.username}</p>
+                  </div>
+                </div>
+                <hr className="w-[90%] m-auto border-red-200" />
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -207,7 +223,7 @@ const Chat = ({token}) => {
                     className="w-10 h-10 rounded-full mr-4 border-2 border-green-400"
                     alt="avatar"
                   />
-                  <span className="absolute -top-1 -right-2 text-xl">⛄</span>
+                  <span className="absolute -top-1 -right-2 text-xl"></span>
                 </div>
                 <div>
                   <h2 className="font-semibold text-gray-800 flex items-center gap-2">

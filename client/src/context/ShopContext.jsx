@@ -107,29 +107,35 @@ const ShopContextProvider = (props) => {
 
   const addToFavourite = async (itemId) => {
     if (!token) {
-      toast.error('please sign in to use this feature!');
+      toast.error('Please sign in to use this feature!');
       navigate('/login');
       return;
     }
 
-    if (token) {
-      try {
-        const responsive = await axios.post(
-          backendUrl + '/api/favourite/add',
-          { productId: itemId },
-          { headers: { token } }
-        );
-        if (responsive.data?.success) {
-          setFavouriteItems([responsive.data.favouriteProduct, ...favouriteItems]);
-          toast('💖 add to favorites success');
-          getFavouriteCart();
-        } else {
-          toast.error(responsive.data?.message);
-        }
-      } catch (error) {
-        console.log(error);
-        toast.error(error.message);
+    try {
+      console.log('🎁 Adding to favourite, itemId:', itemId);
+      console.log('🔑 Token exists:', !!token);
+      
+      const response = await axios.post(
+        backendUrl + '/api/favourite/add',
+        { productId: itemId },
+        { headers: { token } }
+      );
+      
+      console.log('📦 Response:', response.data);
+      
+      if (response.data?.success) {
+        setFavouriteItems([response.data.favouriteProduct, ...favouriteItems]);
+        toast.success('💖 Added to favorites successfully!');
+        await getFavouriteCart(token);
+      } else {
+        console.error('❌ Failed:', response.data?.message);
+        toast.error(response.data?.message || 'Failed to add to favorites');
       }
+    } catch (error) {
+      console.error('❌ Error adding to favourite:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Error adding to favorites');
     }
   };
 
@@ -226,7 +232,7 @@ const ShopContextProvider = (props) => {
   const getFavouriteCart = async (token) => {
     try {
       const response = await axios.get(backendUrl + '/api/favourite/get', { headers: { token } });
-      if (response.data.success) {
+      if (response.data.success && response.data.favoriteProducts) {
         const validFavourites = await Promise.all(
           response.data.favoriteProducts.map(async (fd) => {
             const product = await getSingleProduct(fd);
@@ -235,9 +241,12 @@ const ShopContextProvider = (props) => {
           })
         );
         setFavouriteItems(validFavourites.filter((f) => f).reverse()); // Chỉ giữ sản phẩm hợp lệ
+      } else {
+        setFavouriteItems([]); // Set empty array if no favorites
       }
     } catch (error) {
       console.log(error);
+      setFavouriteItems([]); // Set empty array on error
       toast.error(error.message);
     }
   };
