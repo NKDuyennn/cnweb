@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import santaSleighGif from '../assets/santa-sleigh.gif';
 import './ChristmasEffects.css';
 
 const ChristmasEffects = () => {
@@ -38,14 +39,10 @@ const ChristmasEffects = () => {
                 ))}
             </div>
 
-            {/* Tuần lộc kéo xe có ông già Noel */}
+            {/* Tuần lộc chạy - GIF Animation */}
             <div className="reindeer-container">
-                <div className="santa-sleigh">
-                    <span className="reindeer reindeer-1">🦌</span>
-                    <span className="reindeer reindeer-2">🦌</span>
-                    <span className="reindeer reindeer-3">🦌</span>
-                    <span className="sleigh">🛷</span>
-                    <span className="santa">🎅</span>
+                <div className="santa-sleigh-gif">
+                    <img src={santaSleighGif} alt="Santa Sleigh with Reindeer" />
                 </div>
             </div>
         </div>
