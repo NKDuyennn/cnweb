@@ -7,7 +7,15 @@ const handleConnection = (socket, io) => {
 
   // Listen for the join event to send previous messages
   socket.on('join', async ({ userId, adminId }) => {
-    socket.join(userId); // Join a room with the user's ID
+    // If admin is joining, join admin room only
+    if (adminId === 'admin' && userId !== 'admin') {
+      socket.join('admin'); // Admin joins admin room to receive all admin messages
+      console.log(`🔑 Admin socket ${socket.id} joined 'admin' room to view user ${userId}`);
+    } else {
+      // Regular user joins their own private room
+      socket.join(userId);
+      console.log(`👤 User ${userId} (socket ${socket.id}) joined their private room '${userId}'`);
+    }
 
     // Fetch previous messages between the user and admin
     try {
@@ -17,7 +25,8 @@ const handleConnection = (socket, io) => {
           { sender: adminId, receiver: userId },
           { sender: 'bot', receiver: userId },
         ],
-      });
+      }).sort({ timestamp: 1 }); // Sort by timestamp ascending
+      console.log(`📨 Sending ${messages.length} previous messages for user ${userId} to admin`);
       socket.emit('previousMessages', messages);
     } catch (error) {
       console.error('Failed to fetch messages', error);
@@ -29,9 +38,29 @@ const handleConnection = (socket, io) => {
     const message = new ChatMessage(msg);
     await message.save();
     
-    // Send the message to receiver and sender
-    io.to(msg.receiver).emit('privateMessage', msg);
-    io.to(msg.sender).emit('privateMessage', msg);
+    console.log(`📤 Message saved: ${msg.sender} -> ${msg.receiver}: ${msg.message.substring(0, 50)}...`);
+    
+    // Send the message to the SPECIFIC receiver room only
+    if (msg.receiver === 'admin') {
+      // Message to admin: send to admin room
+      console.log(`   ➡️ Emitting to 'admin' room`);
+      io.to('admin').emit('privateMessage', msg);
+    } else {
+      // Message to user: send to that specific user's room only
+      console.log(`   ➡️ Emitting to room '${msg.receiver}'`);
+      io.to(msg.receiver).emit('privateMessage', msg);
+    }
+    
+    // Send confirmation back to sender
+    if (msg.sender === 'admin') {
+      // Admin sent message: confirm in admin room
+      console.log(`   ✅ Confirming to 'admin' room (sender)`);
+      io.to('admin').emit('privateMessage', msg);
+    } else {
+      // User sent message: confirm in their room only
+      console.log(`   ✅ Confirming to room '${msg.sender}' (sender)`);
+      io.to(msg.sender).emit('privateMessage', msg);
+    }
 
     // 🤖 AI Auto-response: Only if admin hasn't responded recently
     if (msg.receiver === 'admin' && msg.sender !== 'admin' && shouldRespondWithAI(msg.message, msg.sender)) {
@@ -133,13 +162,37 @@ const handleConnection = (socket, io) => {
 // get the list of users who have chatted with the admin and return their usernames
 const getUsers = async (req, res) => {
   try {
-    const users = await ChatMessage.distinct('sender', { receiver: "admin" });
-    const usersWithNames = await Promise.all(users.map(async (userId) => {
-      const user = await userModel.findById(userId); 
-      return { userId, username: user.name };
+    // Get all unique users who have chatted with admin (either as sender or receiver)
+    // Exclude 'admin' and 'bot' from the list
+    const senders = await ChatMessage.distinct('sender', { 
+      receiver: "admin",
+      sender: { $nin: ['admin', 'bot'] }
+    });
+    
+    const receivers = await ChatMessage.distinct('receiver', { 
+      sender: "admin",
+      receiver: { $nin: ['admin', 'bot'] }
+    });
+    
+    // Combine and get unique user IDs
+    const allUserIds = [...new Set([...senders, ...receivers])];
+    
+    const usersWithNames = await Promise.all(allUserIds.map(async (userId) => {
+      try {
+        const user = await userModel.findById(userId);
+        if (!user) return null; // Skip if user not found
+        return { userId, username: user.name };
+      } catch (err) {
+        console.error(`Error fetching user ${userId}:`, err);
+        return null;
+      }
     }));
-    res.json({ success: true, users: usersWithNames });
+    
+    // Filter out null values and return unique users
+    const validUsers = usersWithNames.filter(user => user !== null);
+    res.json({ success: true, users: validUsers });
   } catch (error) {
+    console.error('Error in getUsers:', error);
     res.json({ success: false, message: error.message });
   }
 };

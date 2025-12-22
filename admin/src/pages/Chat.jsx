@@ -65,20 +65,50 @@ const Chat = ({token}) => {
   }, [users]);
 
   useEffect(() => {
+    if (!token) return;
+    
     const newSocket = io(backendUrl, {
       query: { token },
-      transports: ['websocket']
+      transports: ['websocket', 'polling']
+    });
+    
+    newSocket.on('connect', () => {
+      console.log('✅ Socket connected');
+      // Join admin room immediately when connected
+      newSocket.emit('join', {
+        userId: 'admin',
+        adminId: 'admin'
+      });
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('❌ Socket disconnected');
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error);
     });
     
     setSocket(newSocket);
 
     return () => {
-      if (newSocket) newSocket.disconnect();
+      if (newSocket) {
+        newSocket.off('connect');
+        newSocket.off('disconnect');
+        newSocket.off('connect_error');
+        newSocket.disconnect();
+      }
     };
-  }, []);
+  }, [token]);
 
   useEffect(() => {
-    if (!socket || !selectedUser) return;
+    if (!socket || !selectedUser) {
+      setMessages([]);
+      return;
+    }
+
+    // Reset messages when switching users
+    setMessages([]);
 
     // Join room for selected user
     socket.emit('join', {
@@ -87,24 +117,43 @@ const Chat = ({token}) => {
     });
 
     // Listen for previous messages
-    socket.on('previousMessages', (prevMessages) => {
+    const handlePreviousMessages = (prevMessages) => {
+      console.log('📨 Received previous messages:', prevMessages.length);
       setMessages(prevMessages);
-    });
+    };
 
     // Listen for new messages
-    socket.on('privateMessage', (newMsg) => {
-      setMessages(prev => [...prev, newMsg]);
-    });
+    const handlePrivateMessage = (newMsg) => {
+      console.log('💬 New message received:', newMsg);
+      // Show ALL messages related to selectedUser: user messages, bot messages, admin messages
+      const isUserMessage = newMsg.sender === selectedUser.userId && newMsg.receiver === 'admin';
+      const isAdminMessage = newMsg.sender === 'admin' && newMsg.receiver === selectedUser.userId;
+      const isBotMessage = newMsg.sender === 'bot' && newMsg.receiver === selectedUser.userId;
+      
+      if (isUserMessage || isAdminMessage || isBotMessage) {
+        setMessages(prev => {
+          // Check if message already exists to avoid duplicates
+          const exists = prev.some(m => 
+            m.message === newMsg.message && 
+            m.sender === newMsg.sender && 
+            m.receiver === newMsg.receiver &&
+            Math.abs(new Date(m.timestamp) - new Date(newMsg.timestamp)) < 2000
+          );
+          if (exists) {
+            console.log('⚠️ Duplicate message detected, skipping:', newMsg);
+            return prev;
+          }
+          return [...prev, newMsg];
+        });
+      }
+    };
 
-    // Request previous messages
-    socket.emit('getPreviousMessages', {
-      userId: selectedUser.userId,
-      adminId: 'admin'
-    });
+    socket.on('previousMessages', handlePreviousMessages);
+    socket.on('privateMessage', handlePrivateMessage);
 
     return () => {
-      socket.off('previousMessages');
-      socket.off('privateMessage');
+      socket.off('previousMessages', handlePreviousMessages);
+      socket.off('privateMessage', handlePrivateMessage);
     };
   }, [socket, selectedUser]);
 
@@ -248,18 +297,30 @@ const Chat = ({token}) => {
                       className={`px-4 py-2 rounded-2xl max-w-[70%] shadow-md relative ${
                         msg.sender === "admin"
                           ? "bg-gradient-to-r from-red-600 to-red-700 text-white"
+                          : msg.sender === "bot"
+                          ? "bg-gradient-to-r from-blue-100 to-blue-200 text-gray-800 border-2 border-blue-300"
                           : "bg-gradient-to-r from-green-100 to-green-200 text-gray-800"
                       }`}
                     >
                       {msg.sender === "admin" && (
                         <span className="absolute -right-2 -top-2 text-xl">🎅</span>
                       )}
-                      {msg.sender !== "admin" && (
+                      {msg.sender === "bot" && (
+                        <span className="absolute -left-2 -top-2 text-xl">🤖</span>
+                      )}
+                      {msg.sender !== "admin" && msg.sender !== "bot" && (
                         <span className="absolute -left-2 -top-2 text-xl">🎁</span>
+                      )}
+                      {msg.sender === "bot" && (
+                        <div className="text-xs font-bold text-blue-600 mb-1">AI Bot 🤖</div>
                       )}
                       {msg.message}
                     </div>
-                    <span className={`text-xs mt-1 ${msg.sender === "admin" ? "text-red-600" : "text-green-600"}`}>
+                    <span className={`text-xs mt-1 ${
+                      msg.sender === "admin" ? "text-red-600" : 
+                      msg.sender === "bot" ? "text-blue-600" : 
+                      "text-green-600"
+                    }`}>
                       {moment(msg.timestamp).format("DD/MM HH:mm")}
                     </span>
                   </div>

@@ -1,0 +1,92 @@
+version: "3.9"
+
+services:
+  # MongoDB
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+  # Backend 1
+  backend1:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: backend1
+    restart: unless-stopped
+    environment:
+      - PORT=4000
+      - MONGODB_URI=mongodb://root:example@mongo:27017/e-commerce?authSource=admin
+    depends_on:
+      mongo:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/api/product/list', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # Backend 2 (y hệt backend1)
+  backend2:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: backend2
+    restart: unless-stopped
+    environment:
+      - PORT=4000
+      - MONGODB_URI=mongodb://root:example@mongo:27017/e-commerce?authSource=admin
+    depends_on:
+      mongo:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/api/product/list', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # Frontend client (user)
+  client-frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_URL: http://localhost:80
+    container_name: client-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend1:
+        condition: service_healthy
+      backend2:
+        condition: service_healthy
+
+  # Frontend admin
+  admin-frontend:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_URL: http://localhost:81
+    container_name: admin-frontend
+    restart: unless-stopped
+    ports:
+      - "81:80"
+    depends_on:
+      backend1:
+        condition: service_healthy
+      backend2:
+        condition: service_healthy
+
+volumes:
+  mongo_data:

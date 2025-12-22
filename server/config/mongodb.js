@@ -5,7 +5,8 @@ const connectDB = async () => {
         console.log('MongoDB connected');
     });
 
-    await moongose.connect(`${process.env.MONGODB_URI}/e-commerce`);
+    // MONGODB_URI đã bao gồm database name và authSource
+    await moongose.connect(process.env.MONGODB_URI);
 };
 
 export default connectDB;

@@ -50,7 +50,21 @@ const ChatBox = () => {
 
     // Initialize socket connection only once
     if (!socketRef.current) {
-      socketRef.current = io(import.meta.env.VITE_BACKEND_URL || "http://localhost:4000");
+      // Khi deploy, sử dụng relative path để Socket.IO tự động dùng cùng domain
+      // Khi dev, sử dụng URL đầy đủ
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+      // Nếu URL là localhost không có port (deploy), sử dụng relative path
+      // undefined sẽ khiến Socket.IO tự động dùng cùng origin với trang web
+      const socketUrl = (backendUrl === 'http://localhost' || backendUrl === 'http://localhost/') 
+        ? undefined  // undefined = cùng origin (tự động dùng domain hiện tại)
+        : backendUrl;
+      
+      socketRef.current = io(socketUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+      });
     }
 
     const socket = socketRef.current;
@@ -65,7 +79,31 @@ const ChatBox = () => {
     };
 
     const handlePrivateMessage = (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      // CRITICAL: Only accept messages where this user is sender or receiver
+      const isForThisUser = 
+        (msg.sender === userId && msg.receiver === 'admin') ||
+        (msg.sender === 'admin' && msg.receiver === userId) ||
+        (msg.sender === 'bot' && msg.receiver === userId);
+      
+      if (!isForThisUser) {
+        console.log('⛔ Ignoring message not for this user:', msg);
+        return;
+      }
+      
+      setMessages((prev) => {
+        // Check if message already exists to avoid duplicates
+        const exists = prev.some(m => 
+          m.message === msg.message && 
+          m.sender === msg.sender && 
+          m.receiver === msg.receiver &&
+          Math.abs(new Date(m.timestamp) - new Date(msg.timestamp)) < 2000
+        );
+        if (exists) {
+          console.log('⚠️ Duplicate message detected, skipping:', msg);
+          return prev;
+        }
+        return [...prev, msg];
+      });
     };
 
     socket.on("previousMessages", handlePreviousMessages);
@@ -85,6 +123,8 @@ const ChatBox = () => {
         message: enterMessage,
         timestamp: new Date(),
       };
+      // Don't add message to state immediately - wait for server confirmation
+      // This prevents duplicate messages
       socketRef.current.emit("privateMessage", newMessage);
       setEnterMessage(""); // Clear input after sending
     }
