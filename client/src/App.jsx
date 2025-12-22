@@ -13,6 +13,7 @@ import Footer from './components/Footer'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Favourite from './pages/Favourite'
+import Reviews from './pages/Reviews'
 import ChatBox from './components/chat'
 import SearchBar from './components/SearchBar'
 import ChristmasEffects from './components/ChristmasEffects'
@@ -39,6 +40,7 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/place-order" element={<PlaceOrder />} />
           <Route path="/favourite" element={<Favourite />} />
+          <Route path="/reviews" element={<Reviews />} />
         </Routes>
         <ChatBox />
       </div>
